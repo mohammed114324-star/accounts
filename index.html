@@ -60,8 +60,8 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
 
-    <!-- Notification Toast Container (معدل ليظهر في الزاوية اليمنى العلوية الواضحة) -->
-    <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm w-full"></div>
+    <!-- Notification Toast Container -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-[99999] flex flex-col gap-3 max-w-sm w-full"></div>
 
     <!-- Authentication -->
     <div id="authModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
@@ -72,8 +72,17 @@
                 <p id="authDescription" class="text-sm text-slate-400">أدخل بريدك الإلكتروني وكلمة المرور.</p>
             </div>
             <form id="authForm" class="space-y-4">
-                <div><label class="block text-sm font-medium text-slate-300 mb-1.5">البريد الإلكتروني</label><input type="email" id="loginEmail" required autocomplete="email" placeholder="name@example.com" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-indigo-500 text-sm"></div>
-                <div><label class="block text-sm font-medium text-slate-300 mb-1.5">كلمة المرور</label><input type="password" id="loginPassword" required minlength="6" autocomplete="current-password" placeholder="6 أحرف على الأقل" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-indigo-500 text-sm"></div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1.5">البريد الإلكتروني</label>
+                    <input type="email" id="loginEmail" required autocomplete="email" placeholder="name@example.com" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-indigo-500 text-sm">
+                </div>
+                <div id="passwordFieldContainer">
+                    <label class="block text-sm font-medium text-slate-300 mb-1.5">كلمة المرور</label>
+                    <input type="password" id="loginPassword" required minlength="6" autocomplete="current-password" placeholder="6 أحرف على الأقل" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-indigo-500 text-sm">
+                </div>
+                <div id="forgotPasswordContainer" class="text-left">
+                    <button type="button" onclick="handleForgotPassword()" class="text-xs text-slate-400 hover:text-indigo-400 transition">نسيت كلمة المرور؟</button>
+                </div>
                 <button type="submit" id="authSubmitBtn" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg transition">تسجيل الدخول</button>
                 <button type="button" id="toggleAuthMode" class="w-full py-2 text-sm text-indigo-300 hover:text-white transition">ما عندك حساب؟ إنشاء حساب جديد</button>
             </form>
@@ -209,7 +218,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, sendEmailVerification, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         // Firebase Configuration
         const firebaseConfig = {
@@ -311,6 +320,21 @@
             }
         });
 
+        window.handleForgotPassword = async function() {
+            const email = document.getElementById('loginEmail').value.trim();
+            if (!email) {
+                showToast('الرجاء إدخال البريد الإلكتروني أولاً في الحقل بالأعلى.', 'error');
+                return;
+            }
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showToast('تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني.', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast('تعذر إرسال بريد الاستعادة. تأكد من صحة البريد.', 'error');
+            }
+        };
+
         document.getElementById('toggleAuthMode').addEventListener('click', () => {
             authMode = authMode === 'login' ? 'register' : 'login';
             document.getElementById('authTitle').textContent = authMode === 'register' ? 'إنشاء حساب جديد' : 'تسجيل الدخول';
@@ -321,7 +345,18 @@
             document.getElementById('toggleAuthMode').textContent = authMode === 'register'
                 ? 'لديك حساب بالفعل؟ تسجيل الدخول'
                 : 'ما عندك حساب؟ إنشاء حساب جديد';
-            document.getElementById('loginPassword').autocomplete = authMode === 'register' ? 'new-password' : 'current-password';
+            
+            const passContainer = document.getElementById('passwordFieldContainer');
+            const forgotContainer = document.getElementById('forgotPasswordContainer');
+            if (authMode === 'register') {
+                passContainer.style.display = 'block';
+                forgotContainer.style.display = 'none';
+                document.getElementById('loginPassword').autocomplete = 'new-password';
+            } else {
+                passContainer.style.display = 'block';
+                forgotContainer.style.display = 'block';
+                document.getElementById('loginPassword').autocomplete = 'current-password';
+            }
         });
 
         onAuthStateChanged(auth, (user) => {
