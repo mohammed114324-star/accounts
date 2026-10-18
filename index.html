@@ -10,8 +10,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts - Cairo -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    <!-- EmailJS SDK -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -65,72 +63,20 @@
     <!-- Notification Toast Container -->
     <div id="toastContainer" class="fixed top-5 left-5 z-50 flex flex-col gap-3 max-w-sm w-full"></div>
 
-    <!-- Auth Modal / Screen (If not logged in) -->
+    <!-- Authentication -->
     <div id="authModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-        <div class="glass-card w-full max-w-md p-8 rounded-2xl shadow-2xl border border-slate-700/50 relative overflow-hidden">
-            <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl"></div>
-            <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl"></div>
-
-            <!-- Login Form Step 1 -->
-            <div id="stepLogin" class="space-y-6">
-                <div class="text-center space-y-2">
-                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600/20 text-indigo-400 mb-2 border border-indigo-500/30">
-                        <i class="fa-solid fa-user-shield text-3xl"></i>
-                    </div>
-                    <h2 class="text-2xl font-bold text-white">تسجيل الدخول</h2>
-                    <p class="text-sm text-slate-400">أدخل بريدك الإلكتروني ليصلك كود التحقق الحقيقي</p>
-                </div>
-
-                <form id="loginForm" onsubmit="handleSendOtp(event)" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-1.5">البريد الإلكتروني</label>
-                        <div class="relative">
-                            <i class="fa-regular fa-envelope absolute right-3.5 top-3.5 text-slate-500"></i>
-                            <input type="email" id="loginEmail" required placeholder="name@example.com" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl py-2.5 pr-10 pl-4 text-white focus:outline-none focus:border-indigo-500 transition text-sm">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-1.5">كلمة المرور</label>
-                        <div class="relative">
-                            <i class="fa-solid fa-lock absolute right-3.5 top-3.5 text-slate-500"></i>
-                            <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl py-2.5 pr-10 pl-4 text-white focus:outline-none focus:border-indigo-500 transition text-sm">
-                        </div>
-                    </div>
-                    <button type="submit" id="sendOtpBtn" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-indigo-500/25 transition duration-200 flex items-center justify-center gap-2">
-                        <span>إرسال رمز التحقق إلى الإيميل</span>
-                        <i class="fa-solid fa-paper-plane text-xs"></i>
-                    </button>
-                </form>
+        <div class="glass-card w-full max-w-md p-8 rounded-2xl shadow-2xl border border-slate-700/50 relative">
+            <div class="text-center space-y-2 mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600/20 text-indigo-400 mb-2 border border-indigo-500/30"><i class="fa-solid fa-user-shield text-3xl"></i></div>
+                <h2 id="authTitle" class="text-2xl font-bold text-white">تسجيل الدخول</h2>
+                <p id="authDescription" class="text-sm text-slate-400">أدخل بريدك الإلكتروني وكلمة المرور.</p>
             </div>
-
-            <!-- OTP Verification Step 2 -->
-            <div id="stepOtp" class="hidden space-y-6">
-                <div class="text-center space-y-2">
-                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-purple-600/20 text-purple-400 mb-2 border border-purple-500/30">
-                        <i class="fa-solid fa-envelope-circle-check text-3xl"></i>
-                    </div>
-                    <h2 class="text-2xl font-bold text-white">رمز التحقق (OTP)</h2>
-                    <p class="text-sm text-slate-400">تم إرسال كود التحقق إلى إيميلك: <br><span id="displayUserEmail" class="text-indigo-400 font-semibold"></span></p>
-                </div>
-
-                <form id="otpForm" onsubmit="handleVerifyOtp(event)" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2 text-center">أدخل الرمز المكون من 4 أرقام</label>
-                        <div class="flex justify-center gap-2 dir-ltr" id="otpInputs">
-                            <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center text-xl font-bold bg-slate-900 border border-slate-700 rounded-xl focus:border-indigo-500 focus:outline-none text-white">
-                            <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center text-xl font-bold bg-slate-900 border border-slate-700 rounded-xl focus:border-indigo-500 focus:outline-none text-white">
-                            <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center text-xl font-bold bg-slate-900 border border-slate-700 rounded-xl focus:border-indigo-500 focus:outline-none text-white">
-                            <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center text-xl font-bold bg-slate-900 border border-slate-700 rounded-xl focus:border-indigo-500 focus:outline-none text-white">
-                        </div>
-                    </div>
-                    <button type="submit" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-xl shadow-lg transition duration-200">
-                        تأكيد الدخول
-                    </button>
-                    <button type="button" onclick="backToLogin()" class="w-full py-2 text-sm text-slate-400 hover:text-white transition">
-                        الرجوع لتعديل البيانات
-                    </button>
-                </form>
-            </div>
+            <form id="authForm" class="space-y-4">
+                <div><label class="block text-sm font-medium text-slate-300 mb-1.5">البريد الإلكتروني</label><input type="email" id="loginEmail" required autocomplete="email" placeholder="name@example.com" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-indigo-500 text-sm"></div>
+                <div><label class="block text-sm font-medium text-slate-300 mb-1.5">كلمة المرور</label><input type="password" id="loginPassword" required minlength="6" autocomplete="current-password" placeholder="6 أحرف على الأقل" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-indigo-500 text-sm"></div>
+                <button type="submit" id="authSubmitBtn" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg transition">تسجيل الدخول</button>
+                <button type="button" id="toggleAuthMode" class="w-full py-2 text-sm text-indigo-300 hover:text-white transition">ما عندك حساب؟ إنشاء حساب جديد</button>
+            </form>
         </div>
     </div>
 
@@ -263,16 +209,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        // ==========================================
-        // مفاتيح EmailJS المدمجة بنجاح
-        // ==========================================
-        const EMAILJS_SERVICE_ID = "service_g9u7lut";
-        const EMAILJS_TEMPLATE_ID = "template_jy3vd5o";
-        const EMAILJS_PUBLIC_KEY = "Cs6qpnJHSy1qESI47";
-
-        // Initialize EmailJS
-        emailjs.init(EMAILJS_PUBLIC_KEY);
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         // Firebase Configuration
         const firebaseConfig = {
@@ -287,9 +224,10 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
 
         window.currentUser = null;
-        window.generatedOtp = null;
+        let authMode = "login";
         window.activeTab = 'discord';
         window.accounts = [];
 
@@ -322,101 +260,86 @@
             window.updateUI();
         });
 
-        window.addEventListener('DOMContentLoaded', () => {
-            window.checkUserSession();
-            window.setupOtpInputs();
-        });
-
-        window.checkUserSession = function() {
-            const savedUser = localStorage.getItem('app_user');
-            if (savedUser) {
-                window.currentUser = savedUser;
-                window.showAppUI();
-            } else {
-                window.showAuthModal();
-            }
-        };
-
-        // دالة إرسال كود التحقق الحقيقي إلى البريد الإلكتروني عبر EmailJS
-        window.handleSendOtp = async function(e) {
+        document.getElementById('authForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('loginEmail').value.trim();
-            if (!email) return;
-
-            const btn = document.getElementById('sendOtpBtn');
+            const password = document.getElementById('loginPassword').value;
+            const btn = document.getElementById('authSubmitBtn');
             btn.disabled = true;
-            btn.innerHTML = `<span>جاري إرسال الإيميل...</span>`;
-
-            // توليد كود عشوائي من 4 أرقام
-            window.generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
-
+            btn.textContent = authMode === 'register' ? 'جاري إنشاء الحساب...' : 'جاري تسجيل الدخول...';
             try {
-                // إرسال الإيميل الحقيقي عبر EmailJS
-                await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-                    to_email: email,
-                    otp_code: window.generatedOtp
-                });
-
-                document.getElementById('displayUserEmail').innerText = email;
-                document.getElementById('stepLogin').classList.add('hidden');
-                document.getElementById('stepOtp').classList.remove('hidden');
-                showToast('تم إرسال كود التحقق إلى بريدك الإلكتروني بنجاح!', 'success');
+                if (authMode === 'register') {
+                    const result = await createUserWithEmailAndPassword(auth, email, password);
+                    await sendEmailVerification(result.user);
+                    await signOut(auth);
+                    showToast('تم إنشاء الحساب. تحقق من بريدك الإلكتروني لتفعيل الحساب.', 'success');
+                    authMode = 'login';
+                    document.getElementById('authTitle').textContent = 'تسجيل الدخول';
+                    document.getElementById('authDescription').textContent = 'أدخل بريدك الإلكتروني وكلمة المرور.';
+                    document.getElementById('toggleAuthMode').textContent = 'ما عندك حساب؟ إنشاء حساب جديد';
+                } else {
+                    const result = await signInWithEmailAndPassword(auth, email, password);
+                    if (!result.user.emailVerified) {
+                        await sendEmailVerification(result.user);
+                        await signOut(auth);
+                        showToast('يجب تأكيد بريدك أولاً. أرسلنا رسالة تحقق جديدة.', 'error');
+                        return;
+                    }
+                    window.currentUser = result.user.email;
+                    showAppUI();
+                }
             } catch (err) {
-                console.error(err);
-                showToast('حدث خطأ أثناء إرسال الإيميل، تأكد من إعدادات القالب.', 'error');
+                console.error('Authentication error:', err);
+                const messages = {
+                    'auth/email-already-in-use': 'هذا البريد مسجل مسبقاً. سجّل الدخول.',
+                    'auth/invalid-email': 'صيغة البريد الإلكتروني غير صحيحة.',
+                    'auth/weak-password': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.',
+                    'auth/invalid-credential': 'البريد أو كلمة المرور غير صحيحة.',
+                    'auth/user-not-found': 'لا يوجد حساب بهذا البريد. أنشئ حساباً جديداً.',
+                    'auth/wrong-password': 'كلمة المرور غير صحيحة.',
+                    'auth/too-many-requests': 'محاولات كثيرة؛ حاول لاحقاً.',
+                    'auth/network-request-failed': 'تحقق من اتصال الإنترنت.',
+                    'auth/operation-not-allowed': 'فعّل تسجيل الدخول بالبريد وكلمة المرور من Firebase Authentication.'
+                };
+                showToast(messages[err.code] || 'تعذرت العملية. راجع إعدادات Firebase ثم حاول مجدداً.', 'error');
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = `<span>إرسال رمز التحقق إلى الإيميل</span><i class="fa-solid fa-paper-plane text-xs"></i>`;
+                btn.textContent = authMode === 'register' ? 'إنشاء حساب وإرسال رسالة التحقق' : 'تسجيل الدخول';
             }
-        };
+        });
 
-        window.backToLogin = function() {
-            document.getElementById('stepOtp').classList.add('hidden');
-            document.getElementById('stepLogin').classList.remove('hidden');
-        };
+        document.getElementById('toggleAuthMode').addEventListener('click', () => {
+            authMode = authMode === 'login' ? 'register' : 'login';
+            document.getElementById('authTitle').textContent = authMode === 'register' ? 'إنشاء حساب جديد' : 'تسجيل الدخول';
+            document.getElementById('authDescription').textContent = authMode === 'register'
+                ? 'أنشئ حساباً ببريدك الإلكتروني وكلمة مرور من 6 أحرف على الأقل.'
+                : 'أدخل بريدك الإلكتروني وكلمة المرور.';
+            document.getElementById('authSubmitBtn').textContent = authMode === 'register' ? 'إنشاء حساب وإرسال رسالة التحقق' : 'تسجيل الدخول';
+            document.getElementById('toggleAuthMode').textContent = authMode === 'register'
+                ? 'لديك حساب بالفعل؟ تسجيل الدخول'
+                : 'ما عندك حساب؟ إنشاء حساب جديد';
+            document.getElementById('loginPassword').autocomplete = authMode === 'register' ? 'new-password' : 'current-password';
+        });
 
-        window.handleVerifyOtp = function(e) {
-            e.preventDefault();
-            const inputs = document.querySelectorAll('.otp-input');
-            let enteredOtp = '';
-            inputs.forEach(input => enteredOtp += input.value);
-
-            if (enteredOtp === window.generatedOtp || enteredOtp === '1234') {
-                const email = document.getElementById('loginEmail').value.trim();
-                window.currentUser = email;
-                localStorage.setItem('app_user', email);
-                showToast('تم تسجيل الدخول بنجاح!', 'success');
+        onAuthStateChanged(auth, (user) => {
+            if (user && user.emailVerified) {
+                window.currentUser = user.email;
                 window.showAppUI();
             } else {
-                showToast('رمز التحقق غير صحيح، حاول مجدداً', 'error');
+                window.currentUser = null;
+                window.showAuthModal();
             }
-        };
+        });
 
-        window.setupOtpInputs = function() {
-            const inputs = document.querySelectorAll('.otp-input');
-            inputs.forEach((input, index) => {
-                input.addEventListener('input', (e) => {
-                    if (e.target.value.length === 1 && index < inputs.length - 1) {
-                        inputs[index + 1].focus();
-                    }
-                });
-                input.addEventListener('keydown', (e) => {
-                    if (e.key === 'Backspace' && !e.target.value && index > 0) {
-                        inputs[index - 1].focus();
-                    }
-                });
-            });
-        };
-
-        window.handleLogout = function() {
-            localStorage.removeItem('app_user');
-            window.currentUser = null;
-            document.getElementById('appContainer').classList.add('hidden');
-            document.getElementById('authModal').classList.remove('hidden');
-            document.getElementById('stepOtp').classList.add('hidden');
-            document.getElementById('stepLogin').classList.remove('hidden');
-            document.getElementById('loginForm').reset();
-            showToast('تم تسجيل الخروج', 'info');
+        window.handleLogout = async function() {
+            try {
+                await signOut(auth);
+                window.currentUser = null;
+                showToast('تم تسجيل الخروج', 'info');
+            } catch (err) {
+                console.error(err);
+                showToast('تعذر تسجيل الخروج', 'error');
+            }
         };
 
         window.showAuthModal = function() {
@@ -427,7 +350,7 @@
         window.showAppUI = function() {
             document.getElementById('authModal').classList.add('hidden');
             document.getElementById('appContainer').classList.remove('hidden');
-            document.getElementById('currentUserEmailDisplay').innerText = window.currentUser;
+            document.getElementById('currentUserEmailDisplay').innerText = window.currentUser || '';
             window.updateUI();
         };
 
