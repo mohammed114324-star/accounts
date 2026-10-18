@@ -277,7 +277,7 @@
                             
                             <!-- Platform Selector Tabs -->
                             <div class="flex bg-slate-900/80 p-1 rounded-xl border border-slate-800 self-start sm:self-auto">
-                                <button onclick="switchTab('discord')" id="tab-discord" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-indigo-400 bg-indigo-500/10">
+                                <button onclick="switchTab('discord')" id="tab-discord" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-indigo-400 bg-indigo-500/10 border border-indigo-500/30">
                                     <i class="fa-brands fa-discord"></i>
                                     <span>دسكورد</span>
                                 </button>
@@ -346,103 +346,120 @@
 
     </div>
 
-    <!-- Application Script -->
-    <script>
-        // State Management
-        let currentUser = null;
-        let generatedOtp = null;
-        let activeTab = 'discord';
+    <!-- Firebase SDK v10 (ES Modules) & Application Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Initial Sample Data Structure
-        const defaultAccounts = [
-            { id: '1', platform: 'discord', credentials: 'discord_user1@gmail.com:pass123456', isClaimed: false, createdAt: new Date().toISOString() },
-            { id: '2', platform: 'discord', credentials: 'discord_nitro_vip@outlook.com:securePass99', isClaimed: false, createdAt: new Date().toISOString() },
-            { id: '3', platform: 'rockstar', credentials: 'gta_v_account@rockstar.com:rockstarPass2026', isClaimed: false, createdAt: new Date().toISOString() },
-            { id: '4', platform: 'steam', credentials: 'steam_gamer_99:SteamMasterKey!#', isClaimed: false, createdAt: new Date().toISOString() },
-            { id: '5', platform: 'steam', credentials: 'steam_csgo_prime@yahoo.com:PrimeAcc2025', isClaimed: true, claimedBy: 'user@example.com', claimedAt: new Date().toISOString() }
-        ];
+        // Firebase Config Integration
+        const firebaseConfig = {
+          apiKey: "AIzaSyCAgjvJT6o3ZTFrhAuXiEV6V3ucW_JgaDY",
+          authDomain: "zzzx-684fb.firebaseapp.com",
+          projectId: "zzzx-684fb",
+          storageBucket: "zzzx-684fb.firebasestorage.app",
+          messagingSenderId: "575709545954",
+          appId: "1:575709545954:web:b2e9b532148175c1b1e5bb",
+          measurementId: "G-Z03B5ND06F"
+        };
 
-        let accounts = [];
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-        // Load data on start
-        window.addEventListener('DOMContentLoaded', () => {
-            loadAccounts();
-            checkUserSession();
-            setupOtpInputs();
+        // Global State
+        window.currentUser = null;
+        window.generatedOtp = null;
+        window.activeTab = 'discord';
+        window.accounts = [];
+
+        // Toast Helper
+        window.showToast = function(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            let bgColor = 'bg-slate-800 border-slate-700 text-white';
+            if (type === 'success') bgColor = 'bg-emerald-900/90 border-emerald-500/50 text-emerald-200';
+            if (type === 'error') bgColor = 'bg-rose-900/90 border-rose-500/50 text-rose-200';
+            
+            toast.className = `p-3.5 rounded-xl border shadow-xl text-xs font-semibold flex items-center justify-between transition-all duration-300 ${bgColor}`;
+            toast.innerHTML = `<span>${message}</span><i class="fa-solid fa-xmark cursor-pointer opacity-70 hover:opacity-100 mr-2" onclick="this.parentElement.remove()"></i>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 4000);
+        };
+
+        // Clipboard Helper
+        window.copyToClipboard = function(text, showToastFlag = true) {
+            navigator.clipboard.writeText(text).then(() => {
+                if (showToastFlag) showToast('تم نسخ البيانات إلى الحافظة بنجاح!', 'success');
+            }).catch(() => {
+                showToast('تعذر النسخ التلقائي', 'error');
+            });
+        };
+
+        // Realtime Firestore Listener
+        onSnapshot(collection(db, "accounts"), (snapshot) => {
+            window.accounts = [];
+            snapshot.forEach((docSnap) => {
+                window.accounts.push({
+                    id: docSnap.id,
+                    ...docSnap.data()
+                });
+            });
+            window.updateUI();
         });
 
-        // Local Storage Helpers
-        function loadAccounts() {
-            const stored = localStorage.getItem('app_accounts');
-            if (stored) {
-                try {
-                    accounts = JSON.parse(stored);
-                } catch (e) {
-                    accounts = defaultAccounts;
-                }
-            } else {
-                accounts = defaultAccounts;
-                saveAccounts();
-            }
-        }
+        // App Init & UI Controllers
+        window.addEventListener('DOMContentLoaded', () => {
+            window.checkUserSession();
+            window.setupOtpInputs();
+        });
 
-        function saveAccounts() {
-            localStorage.setItem('app_accounts', JSON.stringify(accounts));
-            updateUI();
-        }
-
-        function checkUserSession() {
+        window.checkUserSession = function() {
             const savedUser = localStorage.getItem('app_user');
             if (savedUser) {
-                currentUser = savedUser;
-                showAppUI();
+                window.currentUser = savedUser;
+                window.showAppUI();
             } else {
-                showAuthModal();
+                window.showAuthModal();
             }
-        }
+        };
 
-        // Authentication & OTP Logic
-        function handleSendOtp(e) {
+        window.handleSendOtp = function(e) {
             e.preventDefault();
             const email = document.getElementById('loginEmail').value.trim();
             if (!email) return;
 
-            // Generate 4 digit OTP
-            generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
-            
+            window.generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
             document.getElementById('displayUserEmail').innerText = email;
-            document.getElementById('demoOtpCode').innerText = generatedOtp;
+            document.getElementById('demoOtpCode').innerText = window.generatedOtp;
 
-            // Transition UI
             document.getElementById('stepLogin').classList.add('hidden');
             document.getElementById('stepOtp').classList.remove('hidden');
 
             showToast('تم إرسال رمز التحقق التجريبي!', 'info');
-        }
+        };
 
-        function backToLogin() {
+        window.backToLogin = function() {
             document.getElementById('stepOtp').classList.add('hidden');
             document.getElementById('stepLogin').classList.remove('hidden');
-        }
+        };
 
-        function handleVerifyOtp(e) {
+        window.handleVerifyOtp = function(e) {
             e.preventDefault();
             const inputs = document.querySelectorAll('.otp-input');
             let enteredOtp = '';
             inputs.forEach(input => enteredOtp += input.value);
 
-            if (enteredOtp === generatedOtp || enteredOtp === '1234') { // Allow 1234 for easy testing
+            if (enteredOtp === window.generatedOtp || enteredOtp === '1234') {
                 const email = document.getElementById('loginEmail').value.trim();
-                currentUser = email;
+                window.currentUser = email;
                 localStorage.setItem('app_user', email);
                 showToast('تم تسجيل الدخول بنجاح!', 'success');
-                showAppUI();
+                window.showAppUI();
             } else {
                 showToast('رمز التحقق غير صحيح، حاول مجدداً', 'error');
             }
-        }
+        };
 
-        function setupOtpInputs() {
+        window.setupOtpInputs = function() {
             const inputs = document.querySelectorAll('.otp-input');
             inputs.forEach((input, index) => {
                 input.addEventListener('input', (e) => {
@@ -456,72 +473,84 @@
                     }
                 });
             });
-        }
+        };
 
-        function handleLogout() {
+        window.handleLogout = function() {
             localStorage.removeItem('app_user');
-            currentUser = null;
+            window.currentUser = null;
             document.getElementById('appContainer').classList.add('hidden');
             document.getElementById('authModal').classList.remove('hidden');
             document.getElementById('stepOtp').classList.add('hidden');
             document.getElementById('stepLogin').classList.remove('hidden');
             document.getElementById('loginForm').reset();
             showToast('تم تسجيل الخروج', 'info');
-        }
+        };
 
-        function showAuthModal() {
+        window.showAuthModal = function() {
             document.getElementById('authModal').classList.remove('hidden');
             document.getElementById('appContainer').classList.add('hidden');
-        }
+        };
 
-        function showAppUI() {
+        window.showAppUI = function() {
             document.getElementById('authModal').classList.add('hidden');
             document.getElementById('appContainer').classList.remove('hidden');
-            document.getElementById('currentUserEmailDisplay').innerText = currentUser;
-            updateUI();
-        }
+            document.getElementById('currentUserEmailDisplay').innerText = window.currentUser;
+            window.updateUI();
+        };
 
-        // Account Management Actions
-        function handleAddAccount(e) {
+        // Firebase Operations
+        window.handleAddAccount = async function(e) {
             e.preventDefault();
             const credsInput = document.getElementById('accCredentials');
             const platformInput = document.getElementById('accPlatform');
 
-            const newAcc = {
-                id: Date.now().toString(),
-                platform: platformInput.value,
-                credentials: credsInput.value.trim(),
-                isClaimed: false,
-                createdAt: new Date().toISOString()
-            };
-
-            accounts.unshift(newAcc);
-            saveAccounts();
-            credsInput.value = '';
-            showToast('تمت إضافة الحساب بنجاح', 'success');
-        }
-
-        function claimAccount(id) {
-            const accIndex = accounts.findIndex(a => a.id === id);
-            if (accIndex !== -1 && !accounts[accIndex].isClaimed) {
-                const creds = accounts[accIndex].credentials;
-                accounts[accIndex].isClaimed = true;
-                accounts[accIndex].claimedBy = currentUser;
-                accounts[accIndex].claimedAt = new Date().toISOString();
-                
-                // Copy account credentials to clipboard automatically
-                copyToClipboard(creds, false);
-
-                saveAccounts();
-                showToast('تم استلام الحساب ونسخ بياناته للحافظة بنجاح!', 'success');
+            try {
+                await addDoc(collection(db, "accounts"), {
+                    platform: platformInput.value,
+                    credentials: credsInput.value.trim(),
+                    isClaimed: false,
+                    createdAt: new Date().toISOString()
+                });
+                credsInput.value = '';
+                showToast('تمت إضافة الحساب بنجاح سحابياً!', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast('حدث خطأ أثناء حفظ الحساب', 'error');
             }
-        }
+        };
 
-        // Tab Switching
-        function switchTab(platform) {
-            activeTab = platform;
-            
-            // Update Tab Buttons UI
+        window.claimAccount = async function(id) {
+            const acc = window.accounts.find(a => a.id === id);
+            if (acc && !acc.isClaimed) {
+                try {
+                    const accRef = doc(db, "accounts", id);
+                    await updateDoc(accRef, {
+                        isClaimed: true,
+                        claimedBy: window.currentUser,
+                        claimedAt: new Date().toISOString()
+                    });
+                    copyToClipboard(acc.credentials, false);
+                    showToast('تم استلام الحساب ونسخ بياناته للحافظة بنجاح!', 'success');
+                } catch (err) {
+                    console.error(err);
+                    showToast('تعذر استلام الحساب', 'error');
+                }
+            }
+        };
+
+        window.deleteAccount = async function(id) {
+            if (confirm('هل أنت متأكد من حذف هذا الحساب نهائياً؟')) {
+                try {
+                    await deleteDoc(doc(db, "accounts", id));
+                    showToast('تم حذف الحساب بنجاح', 'info');
+                } catch (err) {
+                    showToast('تعذر حذف الحساب', 'error');
+                }
+            }
+        };
+
+        window.switchTab = function(platform) {
+            window.activeTab = platform;
             ['discord', 'rockstar', 'steam'].forEach(p => {
                 const btn = document.getElementById(`tab-${p}`);
                 if (p === platform) {
@@ -530,12 +559,10 @@
                     btn.className = "tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-400 hover:text-white";
                 }
             });
+            window.renderPlatformTabContent();
+        };
 
-            renderPlatformTabContent();
-        }
-
-        // Helper Icon / Name Formatters
-        function getPlatformBadge(platform) {
+        window.getPlatformBadge = function(platform) {
             switch(platform) {
                 case 'discord':
                     return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"><i class="fa-brands fa-discord"></i> دسكورد</span>`;
@@ -546,23 +573,22 @@
                 default:
                     return '';
             }
-        }
+        };
 
-        // Render Functions
-        function updateUI() {
-            renderStats();
-            renderPlatformTabContent();
-            renderClaimableAccounts();
-            renderClaimedHistory();
-        }
+        window.updateUI = function() {
+            window.renderStats();
+            window.renderPlatformTabContent();
+            window.renderClaimableAccounts();
+            window.renderClaimedHistory();
+        };
 
-        function renderStats() {
-            const total = accounts.length;
-            const available = accounts.filter(a => !a.isClaimed).length;
-            const claimed = accounts.filter(a => a.isClaimed).length;
-            const discordCount = accounts.filter(a => a.platform === 'discord').length;
-            const rockstarCount = accounts.filter(a => a.platform === 'rockstar').length;
-            const steamCount = accounts.filter(a => a.platform === 'steam').length;
+        window.renderStats = function() {
+            const total = window.accounts.length;
+            const available = window.accounts.filter(a => !a.isClaimed).length;
+            const claimed = window.accounts.filter(a => a.isClaimed).length;
+            const discordCount = window.accounts.filter(a => a.platform === 'discord').length;
+            const rockstarCount = window.accounts.filter(a => a.platform === 'rockstar').length;
+            const steamCount = window.accounts.filter(a => a.platform === 'steam').length;
 
             document.getElementById('statTotal').innerText = total;
             document.getElementById('statAvailable').innerText = available;
@@ -570,19 +596,18 @@
             document.getElementById('statDiscord').innerText = discordCount;
             document.getElementById('statRockstar').innerText = rockstarCount;
             document.getElementById('statSteam').innerText = steamCount;
-
             document.getElementById('claimedBadgeCount').innerText = claimed;
-        }
+        };
 
-        function renderPlatformTabContent() {
+        window.renderPlatformTabContent = function() {
             const container = document.getElementById('tabContentList');
-            const filtered = accounts.filter(a => a.platform === activeTab && !a.isClaimed);
+            const filtered = window.accounts.filter(a => a.platform === window.activeTab && !a.isClaimed);
 
             if (filtered.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-8 border border-dashed border-slate-800 rounded-xl">
                         <i class="fa-solid fa-folder-open text-3xl text-slate-600 mb-2"></i>
-                        <p class="text-xs text-slate-500">لا توجد حسابات متاحة حالياً لـ ${activeTab.toUpperCase()}</p>
+                        <p class="text-xs text-slate-500">لا توجد حسابات متاحة حالياً لـ ${window.activeTab.toUpperCase()}</p>
                     </div>
                 `;
                 return;
@@ -590,128 +615,79 @@
 
             container.innerHTML = filtered.map(acc => `
                 <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex items-center justify-between hover:border-slate-700 transition">
-                    <div class="flex items-center gap-3 overflow-hidden">
-                        ${getPlatformBadge(acc.platform)}
-                        <span class="font-mono text-xs text-slate-300 truncate select-all">${acc.credentials}</span>
+                    <div class="flex items-center gap-3">
+                        ${window.getPlatformBadge(acc.platform)}
+                        <span class="font-mono text-xs text-slate-300 font-semibold tracking-wide">${acc.credentials}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="copyToClipboard('${acc.credentials}')" class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition" title="نسخ البيانات">
+                            <i class="fa-regular fa-copy text-sm"></i>
+                        </button>
+                        <button onclick="deleteAccount('${acc.id}')" class="p-2 hover:bg-red-500/10 rounded-lg text-slate-500 hover:text-red-400 transition" title="حذف الحساب">
+                            <i class="fa-solid fa-trash text-sm"></i>
+                        </button>
                     </div>
                 </div>
             `).join('');
-        }
+        };
 
-        function renderClaimableAccounts() {
+        window.renderClaimableAccounts = function() {
             const container = document.getElementById('claimAccountsList');
-            const availableList = accounts.filter(a => !a.isClaimed);
+            const available = window.accounts.filter(a => !a.isClaimed);
 
-            if (availableList.length === 0) {
+            if (available.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-8 border border-dashed border-slate-800 rounded-xl">
-                        <i class="fa-solid fa-box-open text-3xl text-slate-600 mb-2"></i>
-                        <p class="text-xs text-slate-500">تم سحب جميع الحسابات المتاحة حالياً!</p>
+                        <i class="fa-solid fa-check-double text-3xl text-slate-600 mb-2"></i>
+                        <p class="text-xs text-slate-500">جميع الحسابات مستلمة، لا توجد حسابات متبقية للسحب</p>
                     </div>
                 `;
                 return;
             }
 
-            container.innerHTML = availableList.map(acc => `
-                <div class="p-3.5 bg-slate-900/80 rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-emerald-500/30 transition">
-                    <div class="flex items-center gap-3 overflow-hidden">
-                        ${getPlatformBadge(acc.platform)}
-                        <span class="font-mono text-xs text-slate-200 truncate">${acc.credentials}</span>
+            container.innerHTML = available.map(acc => `
+                <div class="p-3.5 bg-slate-900/80 rounded-xl border border-slate-800 flex items-center justify-between hover:border-emerald-500/30 transition">
+                    <div class="flex items-center gap-3">
+                        ${window.getPlatformBadge(acc.platform)}
+                        <span class="font-mono text-xs text-slate-300">${acc.credentials}</span>
                     </div>
-                    <button onclick="claimAccount('${acc.id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow transition flex items-center justify-center gap-1.5 shrink-0">
-                        <i class="fa-solid fa-hand-holding"></i>
-                        <span>أخذ الحساب</span>
+                    <button onclick="claimAccount('${acc.id}')" class="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                        <i class="fa-solid fa-download text-xs"></i>
+                        <span>سحب</span>
                     </button>
                 </div>
             `).join('');
-        }
+        };
 
-        function renderClaimedHistory() {
+        window.renderClaimedHistory = function() {
             const container = document.getElementById('claimedHistoryList');
-            const claimedList = accounts.filter(a => a.isClaimed);
+            const claimed = window.accounts.filter(a => a.isClaimed);
 
-            if (claimedList.length === 0) {
+            if (claimed.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-12 border border-dashed border-slate-800 rounded-xl">
-                        <i class="fa-solid fa-ghost text-3xl text-slate-600 mb-2"></i>
-                        <p class="text-xs text-slate-500">لم يتم سحب أي حساب حتى الآن</p>
+                        <i class="fa-solid fa-box-open text-3xl text-slate-600 mb-2"></i>
+                        <p class="text-xs text-slate-500">لم يتم استلام أي حسابات بعد</p>
                     </div>
                 `;
                 return;
             }
 
-            container.innerHTML = claimedList.map(acc => `
-                <div class="p-3.5 bg-slate-900/40 rounded-xl border border-slate-800/80 space-y-2">
+            container.innerHTML = claimed.map(acc => `
+                <div class="p-3.5 bg-slate-900/60 rounded-xl border border-purple-500/10 space-y-2">
                     <div class="flex items-center justify-between">
-                        ${getPlatformBadge(acc.platform)}
-                        <div class="flex items-center gap-2">
-                            <span class="text-[10px] text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
-                                مستلم
-                            </span>
-                            <button onclick="deleteAccount('${acc.id}')" title="حذف الحساب" class="p-1 px-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg text-xs transition flex items-center gap-1">
-                                <i class="fa-solid fa-trash-can text-xs"></i>
-                                <span>حذف</span>
-                            </button>
-                        </div>
+                        ${window.getPlatformBadge(acc.platform)}
+                        <span class="text-[10px] text-slate-500">مستلم بواسطة: <span class="text-purple-400 font-medium">${acc.claimedBy || 'مستخدم'}</span></span>
                     </div>
-                    <div class="p-2 bg-slate-950/80 rounded-lg border border-slate-800 flex items-center justify-between">
-                        <span class="font-mono text-xs text-slate-300 truncate select-all">${acc.credentials}</span>
+                    <div class="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                        <span class="font-mono text-xs text-slate-300 break-all select-all">${acc.credentials}</span>
+                        <button onclick="copyToClipboard('${acc.credentials}')" class="text-slate-400 hover:text-white p-1" title="نسخ">
+                            <i class="fa-regular fa-copy text-xs"></i>
+                        </button>
                     </div>
-                    ${acc.claimedBy ? `<p class="text-[10px] text-slate-500 text-left">استلم بواسطة: ${acc.claimedBy}</p>` : ''}
                 </div>
             `).join('');
-        }
-
-        // Delete Account Function
-        function deleteAccount(id) {
-            accounts = accounts.filter(a => a.id !== id);
-            saveAccounts();
-            showToast('تم حذف الحساب بنجاح', 'info');
-        }
-
-        // Clipboard Copy
-        function copyToClipboard(text, notify = true) {
-            const tempInput = document.createElement('input');
-            tempInput.value = text;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempInput);
-            if (notify) {
-                showToast('تم نسخ بيانات الحساب!', 'info');
-            }
-        }
-
-        // Toast Notifications
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            
-            let bgClass = 'bg-slate-800 border-slate-700 text-white';
-            let icon = 'fa-info-circle text-indigo-400';
-
-            if (type === 'success') {
-                bgClass = 'bg-slate-900/90 border-emerald-500/50 text-emerald-300';
-                icon = 'fa-check-circle text-emerald-400';
-            } else if (type === 'error') {
-                bgClass = 'bg-slate-900/90 border-red-500/50 text-red-300';
-                icon = 'fa-circle-xmark text-red-400';
-            }
-
-            toast.className = `p-3.5 rounded-xl border backdrop-blur-md shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-2 opacity-0 text-xs font-semibold ${bgClass}`;
-            toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i><span>${message}</span>`;
-
-            container.appendChild(toast);
-
-            setTimeout(() => {
-                toast.classList.remove('translate-y-2', 'opacity-0');
-            }, 10);
-
-            setTimeout(() => {
-                toast.classList.add('opacity-0', '-translate-y-2');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
+        };
     </script>
 </body>
 </html>
