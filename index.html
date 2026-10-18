@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts - Cairo -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -37,7 +39,6 @@
             background-color: #0f172a;
             color: #f8fafc;
         }
-        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -56,9 +57,6 @@
             background: rgba(30, 41, 59, 0.7);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .glow-effect {
-            box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.3);
         }
     </style>
 </head>
@@ -80,7 +78,7 @@
                         <i class="fa-solid fa-user-shield text-3xl"></i>
                     </div>
                     <h2 class="text-2xl font-bold text-white">تسجيل الدخول</h2>
-                    <p class="text-sm text-slate-400">أدخل بريدك الإلكتروني وكلمة المرور للبدء</p>
+                    <p class="text-sm text-slate-400">أدخل بريدك الإلكتروني ليصلك كود التحقق الحقيقي</p>
                 </div>
 
                 <form id="loginForm" onsubmit="handleSendOtp(event)" class="space-y-4">
@@ -98,8 +96,8 @@
                             <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl py-2.5 pr-10 pl-4 text-white focus:outline-none focus:border-indigo-500 transition text-sm">
                         </div>
                     </div>
-                    <button type="submit" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-indigo-500/25 transition duration-200 flex items-center justify-center gap-2">
-                        <span>إرسال رمز التحقق</span>
+                    <button type="submit" id="sendOtpBtn" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-indigo-500/25 transition duration-200 flex items-center justify-center gap-2">
+                        <span>إرسال رمز التحقق إلى الإيميل</span>
                         <i class="fa-solid fa-paper-plane text-xs"></i>
                     </button>
                 </form>
@@ -112,11 +110,7 @@
                         <i class="fa-solid fa-envelope-circle-check text-3xl"></i>
                     </div>
                     <h2 class="text-2xl font-bold text-white">رمز التحقق (OTP)</h2>
-                    <p class="text-sm text-slate-400">تم إرسال كود التحقق التجريبي إلى: <br><span id="displayUserEmail" class="text-indigo-400 font-semibold"></span></p>
-                    <div class="mt-2 p-2.5 bg-indigo-950/50 border border-indigo-500/30 rounded-xl text-xs text-indigo-300 flex items-center justify-between">
-                        <span>كود التحقق التجريبي:</span>
-                        <span id="demoOtpCode" class="font-mono text-base font-bold text-emerald-400 tracking-wider"></span>
-                    </div>
+                    <p class="text-sm text-slate-400">تم إرسال كود التحقق إلى إيميلك: <br><span id="displayUserEmail" class="text-indigo-400 font-semibold"></span></p>
                 </div>
 
                 <form id="otpForm" onsubmit="handleVerifyOtp(event)" class="space-y-4">
@@ -142,8 +136,6 @@
 
     <!-- Main App Container -->
     <div id="appContainer" class="hidden min-h-screen flex flex-col">
-        
-        <!-- Header / Navbar -->
         <header class="glass-card sticky top-0 z-40 border-b border-slate-800">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -155,8 +147,6 @@
                         <span class="text-xs text-slate-400">zzx</span>
                     </div>
                 </div>
-
-                <!-- User Info & Logout -->
                 <div class="flex items-center gap-4">
                     <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-sm">
                         <i class="fa-solid fa-circle-user text-indigo-400"></i>
@@ -170,10 +160,7 @@
             </div>
         </header>
 
-        <!-- Main Content Area -->
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
-
-            <!-- Section 1: Stats Counter -->
             <section>
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xl font-bold text-white flex items-center gap-2">
@@ -181,48 +168,34 @@
                         <span>لوحة الإحصائيات والأعداد</span>
                     </h2>
                 </div>
-                
                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <!-- Total Accounts -->
                     <div class="glass-card p-4 rounded-2xl border border-slate-800 relative overflow-hidden">
                         <p class="text-xs font-medium text-slate-400 mb-1">إجمالي الحسابات</p>
                         <p id="statTotal" class="text-2xl font-black text-white">0</p>
-                        <i class="fa-solid fa-boxes-stacked absolute -left-2 -bottom-2 text-4xl text-slate-700/20"></i>
                     </div>
-                    <!-- Available Accounts -->
                     <div class="glass-card p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 relative overflow-hidden">
                         <p class="text-xs font-medium text-emerald-400 mb-1">المتاحة</p>
                         <p id="statAvailable" class="text-2xl font-black text-emerald-400">0</p>
-                        <i class="fa-solid fa-check-circle absolute -left-2 -bottom-2 text-4xl text-emerald-500/10"></i>
                     </div>
-                    <!-- Claimed Accounts -->
                     <div class="glass-card p-4 rounded-2xl border border-purple-500/20 bg-purple-500/5 relative overflow-hidden">
                         <p class="text-xs font-medium text-purple-400 mb-1">المستخدمة</p>
                         <p id="statClaimed" class="text-2xl font-black text-purple-400">0</p>
-                        <i class="fa-solid fa-hand-holding-box absolute -left-2 -bottom-2 text-4xl text-purple-500/10"></i>
                     </div>
-                    <!-- Discord Count -->
                     <div class="glass-card p-4 rounded-2xl border border-indigo-500/20 relative overflow-hidden">
-                        <p class="text-xs font-medium text-indigo-400 mb-1">دسكورد (Discord)</p>
+                        <p class="text-xs font-medium text-indigo-400 mb-1">دسكورد</p>
                         <p id="statDiscord" class="text-2xl font-black text-indigo-300">0</p>
-                        <i class="fa-brands fa-discord absolute -left-2 -bottom-2 text-4xl text-indigo-500/20"></i>
                     </div>
-                    <!-- Rockstar Count -->
                     <div class="glass-card p-4 rounded-2xl border border-amber-500/20 relative overflow-hidden">
-                        <p class="text-xs font-medium text-amber-400 mb-1">روكستار (Rockstar)</p>
+                        <p class="text-xs font-medium text-amber-400 mb-1">روكستار</p>
                         <p id="statRockstar" class="text-2xl font-black text-amber-300">0</p>
-                        <i class="fa-solid fa-r absolute -left-2 -bottom-2 text-4xl text-amber-500/20"></i>
                     </div>
-                    <!-- Steam Count -->
                     <div class="glass-card p-4 rounded-2xl border border-slate-600/30 relative overflow-hidden">
-                        <p class="text-xs font-medium text-slate-300 mb-1">ستيم (Steam)</p>
+                        <p class="text-xs font-medium text-slate-300 mb-1">ستيم</p>
                         <p id="statSteam" class="text-2xl font-black text-slate-200">0</p>
-                        <i class="fa-brands fa-steam absolute -left-2 -bottom-2 text-4xl text-slate-500/20"></i>
                     </div>
                 </div>
             </section>
 
-            <!-- Section 2: Add Account Form -->
             <section class="glass-card p-6 rounded-2xl border border-slate-800 relative">
                 <div class="flex items-center gap-2 mb-4">
                     <div class="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
@@ -233,125 +206,75 @@
                         <p class="text-xs text-slate-400">قم بإضافة بيانات الحساب المتاح وتحديد منصته</p>
                     </div>
                 </div>
-
                 <form id="addAccountForm" onsubmit="handleAddAccount(event)" class="grid grid-cols-1 md:grid-cols-12 gap-4">
-                    <!-- Account Data Input -->
                     <div class="md:col-span-6">
-                        <label class="block text-xs font-medium text-slate-300 mb-1">بيانات الحساب (الإيميل : كلمة المرور أو اليوزر)</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">بيانات الحساب</label>
                         <input type="text" id="accCredentials" required placeholder="مثال: user@mail.com:password123" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
                     </div>
-
-                    <!-- Platform Dropdown -->
                     <div class="md:col-span-4">
-                        <label class="block text-xs font-medium text-slate-300 mb-1">نوع المنصة / الحساب</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">نوع المنصة</label>
                         <select id="accPlatform" required class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition cursor-pointer">
                             <option value="discord">دسكورد (Discord)</option>
                             <option value="rockstar">روكستار (Rockstar)</option>
                             <option value="steam">ستيم (Steam)</option>
                         </select>
                     </div>
-
-                    <!-- Submit Button -->
                     <div class="md:col-span-2 flex items-end">
-                        <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl shadow-lg hover:shadow-indigo-500/20 transition flex items-center justify-center gap-2">
+                        <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl shadow-lg transition flex items-center justify-center gap-2">
                             <i class="fa-solid fa-plus text-xs"></i>
-                            <span>حفظ الحساب</span>
+                            <span>حفظ</span>
                         </button>
                     </div>
                 </form>
             </section>
 
-            <!-- Main Content Grid (Lists 1, 2, 3) -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
-                <!-- Left Column: Available Accounts Filtered by Platform (Category Tabs) -->
                 <div class="lg:col-span-7 space-y-6">
-                    
-                    <!-- Section Title & Tabs -->
                     <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div class="flex items-center gap-2">
-                                <i class="fa-solid fa-layer-group text-indigo-400"></i>
-                                <h2 class="text-lg font-bold text-white">القائمة الأولى: الحسابات المتاحة حسب المنصة</h2>
-                            </div>
-                            
-                            <!-- Platform Selector Tabs -->
-                            <div class="flex bg-slate-900/80 p-1 rounded-xl border border-slate-800 self-start sm:self-auto">
-                                <button onclick="switchTab('discord')" id="tab-discord" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-indigo-400 bg-indigo-500/10 border border-indigo-500/30">
-                                    <i class="fa-brands fa-discord"></i>
-                                    <span>دسكورد</span>
-                                </button>
-                                <button onclick="switchTab('rockstar')" id="tab-rockstar" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-400 hover:text-white">
-                                    <i class="fa-solid fa-r"></i>
-                                    <span>روكستار</span>
-                                </button>
-                                <button onclick="switchTab('steam')" id="tab-steam" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-400 hover:text-white">
-                                    <i class="fa-brands fa-steam"></i>
-                                    <span>ستيم</span>
-                                </button>
+                            <h2 class="text-lg font-bold text-white">القائمة الأولى: الحسابات المتاحة</h2>
+                            <div class="flex bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+                                <button onclick="switchTab('discord')" id="tab-discord" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-400 bg-indigo-500/10">دسكورد</button>
+                                <button onclick="switchTab('rockstar')" id="tab-rockstar" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400">روكستار</button>
+                                <button onclick="switchTab('steam')" id="tab-steam" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400">ستيم</button>
                             </div>
                         </div>
-
-                        <!-- Active Tab Items List -->
-                        <div id="tabContentList" class="space-y-3 min-h-[180px]">
-                            <!-- JavaScript rendered dynamic items -->
-                        </div>
+                        <div id="tabContentList" class="space-y-3 min-h-[180px]"></div>
                     </div>
-
-                    <!-- Section 2: Claim Accounts Panel -->
                     <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <i class="fa-solid fa-gift text-emerald-400"></i>
-                                <h2 class="text-lg font-bold text-white">القائمة الثانية: سحب واستلام الحسابات المتاحة</h2>
-                            </div>
-                            <span class="text-xs text-slate-400 bg-slate-800 px-2.5 py-1 rounded-lg">اضغط لسحب الحساب فوراً</span>
-                        </div>
-
-                        <div id="claimAccountsList" class="space-y-3 max-h-[350px] overflow-y-auto pr-1">
-                            <!-- Dynamic Available List for claiming -->
-                        </div>
+                        <h2 class="text-lg font-bold text-white">القائمة الثانية: سحب واستلام الحسابات</h2>
+                        <div id="claimAccountsList" class="space-y-3 max-h-[350px] overflow-y-auto pr-1"></div>
                     </div>
-
                 </div>
-
-                <!-- Right Column: Claimed Accounts History -->
                 <div class="lg:col-span-5">
                     <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4 h-full flex flex-col">
                         <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                            <div class="flex items-center gap-2">
-                                <i class="fa-solid fa-history text-purple-400"></i>
-                                <h2 class="text-lg font-bold text-white">القائمة الثالثة: الحسابات المستلمة</h2>
-                            </div>
-                            <span id="claimedBadgeCount" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">0</span>
+                            <h2 class="text-lg font-bold text-white">القائمة الثالثة: الحسابات المستلمة</h2>
+                            <span id="claimedBadgeCount" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300">0</span>
                         </div>
-
-                        <p class="text-xs text-slate-400">سجل مرجعي خاص بالحسابات التي قمت باستلامها سابقاً للوصول إليها في أي وقت:</p>
-
-                        <!-- Claimed Accounts List -->
-                        <div id="claimedHistoryList" class="space-y-3 flex-1 overflow-y-auto max-h-[550px] pr-1">
-                            <!-- Dynamic Claimed History items -->
-                        </div>
+                        <div id="claimedHistoryList" class="space-y-3 flex-1 overflow-y-auto max-h-[550px] pr-1"></div>
                     </div>
                 </div>
-
             </div>
-
         </main>
-
-        <!-- Footer -->
-        <footer class="border-t border-slate-800/80 mt-12 py-6 text-center text-xs text-slate-500">
-            <p>جميع الحقوق محفوظة &copy; 2026 - لوحة إدارة وتبادل الحسابات الرقمية</p>
-        </footer>
-
     </div>
 
-    <!-- Firebase SDK v10 (ES Modules) & Application Logic -->
+    <!-- Firebase SDK & Application Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Firebase Config Integration
+        // ==========================================
+        // مفاتيح EmailJS المدمجة بنجاح
+        // ==========================================
+        const EMAILJS_SERVICE_ID = "service_g9u7lut";
+        const EMAILJS_TEMPLATE_ID = "template_jy3vd5o";
+        const EMAILJS_PUBLIC_KEY = "Cs6qpnJHSy1qESI47";
+
+        // Initialize EmailJS
+        emailjs.init(EMAILJS_PUBLIC_KEY);
+
+        // Firebase Configuration
         const firebaseConfig = {
           apiKey: "AIzaSyCAgjvJT6o3ZTFrhAuXiEV6V3ucW_JgaDY",
           authDomain: "zzzx-684fb.firebaseapp.com",
@@ -365,13 +288,11 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Global State
         window.currentUser = null;
         window.generatedOtp = null;
         window.activeTab = 'discord';
         window.accounts = [];
 
-        // Toast Helper
         window.showToast = function(message, type = 'info') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
@@ -385,28 +306,22 @@
             setTimeout(() => { toast.remove(); }, 4000);
         };
 
-        // Clipboard Helper
         window.copyToClipboard = function(text, showToastFlag = true) {
             navigator.clipboard.writeText(text).then(() => {
-                if (showToastFlag) showToast('تم نسخ البيانات إلى الحافظة بنجاح!', 'success');
+                if (showToastFlag) showToast('تم نسخ البيانات للحافظة بنجاح!', 'success');
             }).catch(() => {
                 showToast('تعذر النسخ التلقائي', 'error');
             });
         };
 
-        // Realtime Firestore Listener
         onSnapshot(collection(db, "accounts"), (snapshot) => {
             window.accounts = [];
             snapshot.forEach((docSnap) => {
-                window.accounts.push({
-                    id: docSnap.id,
-                    ...docSnap.data()
-                });
+                window.accounts.push({ id: docSnap.id, ...docSnap.data() });
             });
             window.updateUI();
         });
 
-        // App Init & UI Controllers
         window.addEventListener('DOMContentLoaded', () => {
             window.checkUserSession();
             window.setupOtpInputs();
@@ -422,19 +337,37 @@
             }
         };
 
-        window.handleSendOtp = function(e) {
+        // دالة إرسال كود التحقق الحقيقي إلى البريد الإلكتروني عبر EmailJS
+        window.handleSendOtp = async function(e) {
             e.preventDefault();
             const email = document.getElementById('loginEmail').value.trim();
             if (!email) return;
 
+            const btn = document.getElementById('sendOtpBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<span>جاري إرسال الإيميل...</span>`;
+
+            // توليد كود عشوائي من 4 أرقام
             window.generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
-            document.getElementById('displayUserEmail').innerText = email;
-            document.getElementById('demoOtpCode').innerText = window.generatedOtp;
 
-            document.getElementById('stepLogin').classList.add('hidden');
-            document.getElementById('stepOtp').classList.remove('hidden');
+            try {
+                // إرسال الإيميل الحقيقي عبر EmailJS
+                await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                    to_email: email,
+                    otp_code: window.generatedOtp
+                });
 
-            showToast('تم إرسال رمز التحقق التجريبي!', 'info');
+                document.getElementById('displayUserEmail').innerText = email;
+                document.getElementById('stepLogin').classList.add('hidden');
+                document.getElementById('stepOtp').classList.remove('hidden');
+                showToast('تم إرسال كود التحقق إلى بريدك الإلكتروني بنجاح!', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast('حدث خطأ أثناء إرسال الإيميل، تأكد من إعدادات القالب.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<span>إرسال رمز التحقق إلى الإيميل</span><i class="fa-solid fa-paper-plane text-xs"></i>`;
+            }
         };
 
         window.backToLogin = function() {
@@ -498,7 +431,6 @@
             window.updateUI();
         };
 
-        // Firebase Operations
         window.handleAddAccount = async function(e) {
             e.preventDefault();
             const credsInput = document.getElementById('accCredentials');
@@ -554,9 +486,9 @@
             ['discord', 'rockstar', 'steam'].forEach(p => {
                 const btn = document.getElementById(`tab-${p}`);
                 if (p === platform) {
-                    btn.className = "tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-indigo-400 bg-indigo-500/10 border border-indigo-500/30";
+                    btn.className = "tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition text-indigo-400 bg-indigo-500/10 border border-indigo-500/30";
                 } else {
-                    btn.className = "tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-400 hover:text-white";
+                    btn.className = "tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white";
                 }
             });
             window.renderPlatformTabContent();
@@ -620,10 +552,10 @@
                         <span class="font-mono text-xs text-slate-300 font-semibold tracking-wide">${acc.credentials}</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button onclick="copyToClipboard('${acc.credentials}')" class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition" title="نسخ البيانات">
+                        <button onclick="copyToClipboard('${acc.credentials}')" class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition" title="نسخ">
                             <i class="fa-regular fa-copy text-sm"></i>
                         </button>
-                        <button onclick="deleteAccount('${acc.id}')" class="p-2 hover:bg-red-500/10 rounded-lg text-slate-500 hover:text-red-400 transition" title="حذف الحساب">
+                        <button onclick="deleteAccount('${acc.id}')" class="p-2 hover:bg-red-500/10 rounded-lg text-slate-500 hover:text-red-400 transition" title="حذف">
                             <i class="fa-solid fa-trash text-sm"></i>
                         </button>
                     </div>
